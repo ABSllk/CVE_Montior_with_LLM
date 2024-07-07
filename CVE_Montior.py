@@ -200,7 +200,10 @@ def analyze_poc_json(cve,path):
 def llm_analyze_cve(cve):
     with open('config.json','r') as f:
         api_key = config['api_key']
-        api_base = config['api_base']
+        if config['api_base'] == '':
+            api_base = 'https://api.openai.com'
+        else:
+            api_base = config['api_base']
     client = openai.Client(api_key=api_key, base_url=api_base)
     prompt = "You will then receive a description of a vulnerability.Determine if the vulnerability is exploitable, as defined by the following: 1.The vulnerability is in widely used infrastructure services and frameworks, such as Operating system vulnerabilities,HTTP server (Apache, Nginx, etc.) vulnerabilities, database services vulnerabilities, virtualization and container vulnerabilities, password management and authentication services vulnerabilities. But not in specific applications.2 Can be exploited remotely 3. This vulnerability can have serious consequences. If the above three points are met, it is considered valuable; otherwise, it is not. If there is value, please give possible attack steps to help prevent, if not, please say there is no exploit value, don't need to output any other information. "
     code,title,description,score = analyze_cve_json(cve,path)
@@ -223,8 +226,13 @@ def llm_analyze_cve(cve):
 
 def init():
     global config
-    with open('config.json','r') as f:
-        config = json.load(f)
+    try:
+        with open('config.json','r') as f:
+            config = json.load(f)
+    except:
+        config = {'path':'\\','api_key':'','api_base':''}
+        with open('config.json','w') as f:
+            json.dump(config,f)
 
 if __name__ == '__main__':
     init()
@@ -244,7 +252,11 @@ if __name__ == '__main__':
             json.dump(config,f)
     else:
         #从配置文件中读取路径
-        path = config['path'].replace('\\\\','\\')
+        try:
+            path = config['path'].replace('\\\\','\\')
+        except:
+            print('Please specify the path of the repository')
+            exit()
     if args.update:
         get_cve_list(path)
         get_poc_list(path)
