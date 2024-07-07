@@ -247,7 +247,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.path:
         path = args.path
-        config = {'path':path.replace('\\','\\\\')}
+        config['path'] = path.replace('\\','\\\\')
         with open('config.json','w') as f:
             json.dump(config,f)
     else:
