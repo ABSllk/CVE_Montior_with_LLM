@@ -167,14 +167,16 @@ def analyze_cve_json(cve,path):
     with open(cve_info_path,'r',encoding='utf-8') as f:
         cve_info = f.read()
     data=json.loads(cve_info)
-    code=data['cveMetadata']['cveId']
-    title=data['containers']['cna']['title']
-    description=data['containers']['cna']['descriptions'][0]['value']
+    code = data['cveMetadata'].get('cveId', 'None')
+    title = data['containers']['cna'].get('title', 'None')
+    description = data['containers']['cna']['descriptions'][0].get('value', 'None')
     score=[]
-    for item in data['containers']['cna']['metrics']:
+    for item in data['containers']['cna'].get('metrics', ''):
         key = list(item.keys())[0]
         if key in ['cvssV3_1', 'cvssV3_0']:
             score.append(f"{key}: Score:{item[key]['baseScore']} Severity:{item[key]['baseSeverity']}")
+    if not score:
+        score.append('No score information')
     return code,title,description,score
 
 def analyze_poc_json(cve,path):
