@@ -204,8 +204,8 @@ def analyze_poc_json(cve,path):
     else:
         return 0,[]
 
-#使用chatgpt判断该CVE是否有被利用的价值
-def llm_analyze_cve(cve):
+#向Chatgpt发送请求
+def chatgpt_request(messages):
     with open('config.json','r') as f:
         api_key = config['api_key']
         if config['api_base'] == '':
@@ -213,14 +213,6 @@ def llm_analyze_cve(cve):
         else:
             api_base = config['api_base']
     client = openai.Client(api_key=api_key, base_url=api_base)
-    prompt = "You will then receive a description of a vulnerability.Determine if the vulnerability is exploitable, as defined by the following: 1.The vulnerability is in widely used infrastructure services and frameworks, such as Operating system vulnerabilities,HTTP server (Apache, Nginx, etc.) vulnerabilities, database services vulnerabilities, virtualization and container vulnerabilities, password management and authentication services vulnerabilities. But not in specific applications.2 Can be exploited remotely 3. This vulnerability can have serious consequences. If the above three points are met, it is considered valuable; otherwise, it is not. If there is value, please give possible attack steps to help prevent, if not, please say there is no exploit value, don't need to output any other information. "
-    code,title,description,score = analyze_cve_json(cve,path)
-    if code == '':
-        return 'No CVE information found'
-    messages = [
-        {"role": "system", "content": prompt},
-        {"role": "user", "content": description}
-    ]
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -231,6 +223,32 @@ def llm_analyze_cve(cve):
     except Exception as e:
         print(e)
         return 0
+
+#使用chatgpt判断该CVE是否有被利用的价值
+def llm_analyze_cve(cve):
+    prompt = "You will then receive a description of a vulnerability.Determine if the vulnerability is exploitable, as defined by the following: 1.The vulnerability is in widely used infrastructure services and frameworks, such as Operating system vulnerabilities,HTTP server (Apache, Nginx, etc.) vulnerabilities, database services vulnerabilities, virtualization and container vulnerabilities, password management and authentication services vulnerabilities. But not in specific applications.2 Can be exploited remotely 3. This vulnerability can have serious consequences. If the above three points are met, it is considered valuable; otherwise, it is not. If there is value, please give possible attack steps to help prevent, if not, please say there is no exploit value, don't need to output any other information. "
+    code,title,description,score = analyze_cve_json(cve,path)
+    if code == '':
+        return 'No CVE information found'
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": description}
+    ]
+    response = chatgpt_request(messages)
+    return response
+
+#使用chatgpt自动生成某个CVE的SOP
+def llm_generate_sop(cve):
+    prompt = "接下来你将收到一个漏洞的描述，请使用中文给出处置这个漏洞的标准作业程序。内容⾄少包括：SOP基本信息，SOP的⽤途，SOP的⽬标⽤⼾技能要求，漏洞详细信息，漏洞处置⽅案（打补丁，升级，还是修改配置等），请提供更详细具体可操作的漏洞的修补步骤，需要包含具体命令。"
+    code,title,description,score = analyze_cve_json(cve,path)
+    if code == '':
+        return 'No CVE information found'
+    messages = [
+        {"role": "system", "content": prompt},
+        {"role": "user", "content": code+description}
+    ]
+    response = chatgpt_request(messages)
+    return response
 
 #克隆远程Poc仓库
 def get_poc(param,path):
@@ -274,7 +292,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--path', help='Specify the path of the repository')
     parser.add_argument('-u', '--update', action='store_true',help='Update the CVE and PoC list')
     parser.add_argument('-a', '--analyze', help='Analyze the CVE by LLM model')
-    parser.add_argument('-g', '--get', help='Download PoC',nargs='+')
+    parser.add_argument('-P', '--POC', help='Download PoC',nargs='+')
+    parser.add_argument('-S', '--SOP', help='Use LLM model to generate SOP')
     args = parser.parse_args()
     if args.path:
         path = args.path
@@ -295,5 +314,7 @@ if __name__ == '__main__':
         search(args.search,path)
     if args.analyze:
         print(llm_analyze_cve(args.analyze))
-    if args.get:
-        get_poc(args.get,path)
+    if args.POC:
+        get_poc(args.POC,path)
+    if args.SOP:
+        print(llm_generate_sop(args.SOP))
