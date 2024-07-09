@@ -28,6 +28,8 @@ python CVE_Montior.py -u
 
 -p  指定漏洞库路径,不指定默认为当前路径/上一次使用路径
 
+-g  下载某漏洞的Poc，接受两个参数，第一个为CVE编号，第二个为Poc序号（可由-s获取）
+
 使用-a参数前需在config.json中配置api_key，可使用openai第三方代理，目前仅支持Chatgpt
 
 
