@@ -102,6 +102,12 @@ def extract_cve(path):
     cve = path.split('/')[-1].replace('.json','')
     return cve
 
+#从CVE编号中提取年份和编号
+def extract_year(cve):
+    year = cve.split('-')[1]
+    code = cve.split('-')[2]
+    return year,code
+
 #给出CVE编号，搜索CVE信息和POC
 def search(search_word,path):
     print('Searching...')
@@ -158,8 +164,8 @@ def get_cve_info(cve,path):
 def analyze_cve_json(cve,path):
     cve_path = path+r'\cvelistV5'
     #提取CVE编号中的年份和编号
-    year = cve.split('-')[1]
-    code = (cve.split('-')[2])[:-3]+'xxx'
+    year,code = extract_year(cve)
+    code = code[:-3]+'xxx'
     #读取CVE信息
     cve_info_path = cve_path+"\\cves\\"+year+"\\"+code+"\\"+cve+".json"
     if not os.path.exists(cve_info_path):
@@ -182,7 +188,7 @@ def analyze_cve_json(cve,path):
 def analyze_poc_json(cve,path):
     poc_path = path+r'\PoC-in-GitHub'
     #提取CVE编号中的年份
-    year = cve.split('-')[1]
+    year,code = extract_year(cve)
     poc_info_path = poc_path+"\\"+year+"\\"+cve+".json"
     if os.path.exists(poc_info_path):
         with open(poc_info_path,'r',encoding='utf-8') as f:
@@ -193,7 +199,7 @@ def analyze_poc_json(cve,path):
         #按star数排序
         data.sort(key=lambda x:x['stargazers_count'],reverse=True)
         for i in range(num):
-            poc_list.append(f"{i+1}. {data[i]['name']}  URL：{data[i]['html_url']}")
+            poc_list.append(f"{i+1}. {data[i]['name']}  URL:{data[i]['html_url']}")
         return num,poc_list
     else:
         return 0,[]
@@ -226,6 +232,28 @@ def llm_analyze_cve(cve):
         print(e)
         return 0
 
+#克隆远程Poc仓库
+def get_poc(param,path):
+    cve = param[0]
+    if len(param)>1:
+        no = int(param[1])
+    else:
+        no = 0
+    num,poc_list = analyze_poc_json(cve,path)
+    if num == 0:
+        print('No PoC found')
+        return
+    if no>=num:
+        print('Invalid input')
+        return
+    url = poc_list[no].split('URL:')[1]+'.git'
+    year,code = extract_year(cve)
+    poc_path = path+r'\PoC\\'+year+'\\'+code
+    if not os.path.exists(poc_path):
+        os.makedirs(poc_path)
+    clone(url,poc_path)
+    print('PoC downloaded')
+
 def init():
     global config
     try:
@@ -246,6 +274,7 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--path', help='Specify the path of the repository')
     parser.add_argument('-u', '--update', action='store_true',help='Update the CVE and PoC list')
     parser.add_argument('-a', '--analyze', help='Analyze the CVE by LLM model')
+    parser.add_argument('-g', '--get', help='Download PoC',nargs='+')
     args = parser.parse_args()
     if args.path:
         path = args.path
@@ -266,3 +295,5 @@ if __name__ == '__main__':
         search(args.search,path)
     if args.analyze:
         print(llm_analyze_cve(args.analyze))
+    if args.get:
+        get_poc(args.get,path)
