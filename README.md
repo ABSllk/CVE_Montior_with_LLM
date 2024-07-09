@@ -20,7 +20,7 @@ python CVE_Montior.py -u
 ```
 
 ## 参数用法
--u  更新漏洞库
+-u  更新或部署漏洞库
 
 -s  搜索漏洞
 
@@ -28,7 +28,9 @@ python CVE_Montior.py -u
 
 -p  指定漏洞库路径,不指定默认为当前路径/上一次使用路径
 
--g  下载某漏洞的Poc，接受两个参数，第一个为CVE编号，第二个为Poc序号（可由-s获取）
+-P  下载某漏洞的Poc，接受两个参数，第一个为CVE编号，第二个为Poc序号（可由-s获取）
+
+-S  自动生成某漏洞的标准操作程序（SOP）
 
 使用-a参数前需在config.json中配置api_key，可使用openai第三方代理，目前仅支持Chatgpt
 
