@@ -137,17 +137,17 @@ def get_cve_info(cve,path):
     if code == '':
         print('No CVE information found')
         return
-    print(f"编号: {code}")
-    print(f"标题: {title}")
-    print(f"描述: {description}")
-    print("评分:")
+    print(f"CVE: {code}")
+    print(f"Title: {title}")
+    print(f"Description: {description}")
+    print("Score:")
     for item in score:
         print(item)
     #读取PoC信息
     num,poc_list = analyze_poc_json(cve,path)
     if num>0:
-        print(f"PoC数量: {num}")
-        print("PoC列表(按star数排序):")
+        print(f"The num of PoC:{num}")
+        print("PoC list (Sorted by star):")
         if num>5:
             for i in range(5):
                 print(poc_list[i])
@@ -226,7 +226,7 @@ def chatgpt_request(messages):
 
 #使用chatgpt判断该CVE是否有被利用的价值
 def llm_analyze_cve(cve):
-    prompt = "You will then receive a description of a vulnerability.Determine if the vulnerability is exploitable, as defined by the following: 1.The vulnerability is in widely used infrastructure services and frameworks, such as Operating system vulnerabilities,HTTP server (Apache, Nginx, etc.) vulnerabilities, database services vulnerabilities, virtualization and container vulnerabilities, password management and authentication services vulnerabilities. But not in specific applications.2 Can be exploited remotely 3. This vulnerability can have serious consequences. If the above three points are met, it is considered valuable; otherwise, it is not. If there is value, please give possible attack steps to help prevent, if not, please say there is no exploit value, don't need to output any other information. "
+    prompt = "You will then receive a description of a vulnerability.Determine if the vulnerability is exploitable, as defined by the following: 1.The vulnerability is in widely used infrastructure services and frameworks, such as Operating system vulnerabilities,HTTP server (Apache, Nginx, etc.) vulnerabilities, database services vulnerabilities, virtualization and container vulnerabilities, password management and authentication services vulnerabilities. But not in specific applications.2 Can be exploited remotely 3. This vulnerability can have serious consequences. If the above three points are met, it is considered valuable; otherwise, it is not. If there is value, please give a possible step-by-step attack, if not, please say there is no exploit value, don't need to output any other information. "
     code,title,description,score = analyze_cve_json(cve,path)
     if code == '':
         return 'No CVE information found'
