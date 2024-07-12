@@ -8,19 +8,25 @@ import openai
 #克隆仓库
 def clone(url, path):
     cmd = ['git', 'clone', url, path]
-    subprocess.run(cmd, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result=subprocess.run(cmd, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        raise Exception(f'Failed to clone repository: {result.stderr.decode("utf-8")}')
     print('Clone Success')
 
 #更新仓库
 def fetch(path):
     cmd = ['git', 'fetch']
-    subprocess.run(cmd, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result=subprocess.run(cmd, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        raise Exception(f'Failed to fetch repository: {result.stderr.decode("utf-8")}')
     print('Fetch Success')
 
 #拉取仓库
 def pull(path):
     cmd = ['git', 'pull']
-    subprocess.run(cmd, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result=subprocess.run(cmd, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        raise Exception(f'Failed to pull repository: {result.stderr.decode("utf-8")}')
     print('Pull Success')
 
 #和最新仓库比较，判断新增了哪些CVE
@@ -47,10 +53,18 @@ def get_cve_list(path):
     url = 'https://github.com/CVEProject/cvelistV5.git'
     path = path+r'\cvelistV5'
     if not os.path.exists(path):
-        clone(url, path)
+        try:
+            clone(url, path)
+        except Exception as e:
+            print(e)
+            return
     else:
         # 更新仓库信息
-        fetch(path)
+        try:
+            fetch(path)
+        except Exception as e:
+            print(e)
+            return
         # 获取远程仓库的最新commit hash
         remote_hash = get_commit_hash(path, 'origin/main')
         # 获取本地仓库的commit hash
@@ -75,10 +89,18 @@ def get_poc_list(path):
     url = 'https://github.com/nomi-sec/PoC-in-GitHub.git'
     path = path+r'\PoC-in-GitHub'
     if not os.path.exists(path):
-        clone(url, path)
+        try:
+            clone(url, path)
+        except Exception as e:
+            print(e)
+            return
     else:
         # 更新仓库信息
-        fetch(path)
+        try:
+            fetch(path)
+        except Exception as e:
+            print(e)
+            return
         # 获取远程仓库的最新commit hash
         remote_hash = get_commit_hash(path, 'origin/master')
         # 获取本地仓库的commit hash
