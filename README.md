@@ -32,6 +32,8 @@ python CVE_Montior.py -u
 
 -S  自动生成某漏洞的标准操作程序（SOP）
 
+-H  自动生成模拟某漏洞的蜜罐脚本
+
 使用-a参数前需在config.json中配置api_key，可使用openai第三方代理，目前仅支持Chatgpt
 
 
