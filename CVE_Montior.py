@@ -60,7 +60,7 @@ def get_hash(file):
             if not data:
                 break
             md5.update(data)
-    print(f"File{file} Hash:{md5.hexdigest()}")
+    print(f"File:{os.path.basename(file)} Hash:{md5.hexdigest()}")
     return md5.hexdigest()
 
 #获取CVE列表
@@ -278,7 +278,7 @@ def chatgpt_upload_file(file,model='gpt-3.5-turbo'):
     api_base = config['api_base']
     client = openai.Client(api_key=api_key, base_url=api_base)
     try:
-        response = client.files.create(file=open(file, 'rb'),purpose='assistant')
+        response = client.files.create(file=open(file, 'rb'),purpose='assistants')
         return response.id
     except Exception as e:
         print(e)
@@ -327,7 +327,14 @@ def filter_code_file(path):
 #     return response
 
 def llm_generate_honeypot(cve,path):
-    prompt = "接下来你将收到一个漏洞的信息和几个与之对应的POC代码，请根据给出的信息写出一个自动化python脚本模拟该漏洞，要求：脚本可以监听服务对应的端口将自己模仿成一个正常的服务，不能输出该服务正常响应信息之外的任何信息，可以正确响应攻击者发送的请求，根据漏洞匹配对应攻击步骤，从而让攻击者在一系列步骤后认为自己成功利用了该漏洞，并且记录攻击者的行为。"
+    prompt = '''
+接下来你将收到一个漏洞的信息和几个利用或检测该漏洞的代码，请根据给出的信息写出一个python脚本做为一个蜜罐来模拟该漏洞吸引攻击者。
+要求：
+1.脚本可以监听服务对应的端口将自己模仿成一个正常的服务，但不用实现该服务，仅需体现出一些该服务常见的特征，不能输出该服务正常响应信息之外的任何信息。
+2.根据给出的漏洞信息和代码拆解攻击步骤，并分辨出每个步骤蜜罐需要给出怎样的响应。
+3.根据攻击者的输入匹配对应步骤，做出攻击者期望的行为，对于某些行为并不需要真正去实施，比如执行一些shell命令（如whoami），仅需要给出一些输出让攻击者误以为行为已经实施。但是对于那些攻击者可以验证是否实施的行为，如连接攻击者指出的服务器，请尝试实施以欺骗攻击者。
+3.全程记录下攻击者的每个行为。
+    '''
     #克隆前三个不重复的PoC
     message=''
     i=1
@@ -344,7 +351,7 @@ def llm_generate_honeypot(cve,path):
                 map[hash]=1
                 with open(file,'r',encoding='utf-8') as f:
                     code = f.read()
-                message += f"POC{i} Code:{code}\n"
+                message += f"POC{i} File {os.path.basename(file)}:\n{code}\n"
                 t=1
         if t==1:
             i+=1
@@ -384,10 +391,6 @@ def init():
             json.dump(config,f)
 
 if __name__ == '__main__':
-    init()
-    #get_cve_list(path)
-    #get_poc_list(path)
-    #search('CVE-2024-2333',path)
     parser = argparse.ArgumentParser(description='CVE Monitor')
     parser.add_argument('-s', '--search', help='Search for CVE information')
     parser.add_argument('-p', '--path', help='Specify the path of the repository')
@@ -397,7 +400,9 @@ if __name__ == '__main__':
     parser.add_argument('-S', '--SOP', help='Use LLM model to generate SOP')
     parser.add_argument('-H', '--honeypot', help='Use LLM model to generate honeypot script')
     args = parser.parse_args()
+    global config
     config = {}
+    init()
     if args.path:
         path = args.path
         config['path'] = path.replace('\\','\\\\')
